@@ -154,8 +154,20 @@ func (self *SuggestionsHelper) getRemoteBranchNames(separator string) []string {
 	})
 }
 
+func (self *SuggestionsHelper) getRemoteBranchNamesWithoutRemotePrefix() []string {
+	return slices.FlatMap(self.model.Remotes, func(remote *models.Remote) []string {
+		return slices.Map(remote.Branches, func(branch *models.RemoteBranch) string {
+			return branch.Name
+		})
+	})
+}
+
 func (self *SuggestionsHelper) GetRemoteBranchesSuggestionsFunc(separator string) func(string) []*types.Suggestion {
 	return FuzzySearchFunc(self.getRemoteBranchNames(separator))
+}
+
+func (self *SuggestionsHelper) GetRemoteBranchesWithoutRemotePrefixSuggestionsFunc() func(string) []*types.Suggestion {
+	return FuzzySearchFunc(self.getRemoteBranchNamesWithoutRemotePrefix())
 }
 
 func (self *SuggestionsHelper) getTagNames() []string {

@@ -434,7 +434,7 @@ func (self *BranchesController) createPullRequestMenu(selectedBranch *models.Bra
 				OnPress: func() error {
 					return self.c.Prompt(types.PromptOpts{
 						Title:               branch.Name + " →",
-						FindSuggestionsFunc: self.helpers.Suggestions.GetBranchNameSuggestionsFunc(),
+						FindSuggestionsFunc: self.helpers.Suggestions.GetRemoteBranchesWithoutRemotePrefixSuggestionsFunc(),
 						HandleConfirm: func(targetBranchName string) error {
 							return self.createPullRequest(branch.Name, targetBranchName)
 						},
