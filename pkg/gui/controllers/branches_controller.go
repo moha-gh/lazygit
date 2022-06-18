@@ -432,20 +432,19 @@ func (self *BranchesController) createPullRequestMenu(selectedBranch *models.Bra
 			{
 				LabelColumns: fromToLabelColumns(branch.Name, self.c.Tr.LcSelectBranch),
 				OnPress: func() error {
+					if len(self.model.Remotes) == 1 {
+						toRemote := self.model.Remotes[0].Name
+						self.c.Log.Debugf("PR will target the only existing remote '%s'", toRemote)
+						return self.promptForTargetBranchNameAndCreatePullRequest(branch.Name, toRemote)
+					}
+
 					return self.c.Prompt(types.PromptOpts{
 						Title:               "Select Target Remote",
 						FindSuggestionsFunc: self.helpers.Suggestions.GetRemoteSuggestionsFunc(),
-						HandleConfirm: func(targetRemote string) error {
-							self.c.Log.Debugf("PR will target remote '%s'", targetRemote)
+						HandleConfirm: func(toRemote string) error {
+							self.c.Log.Debugf("PR will target remote '%s'", toRemote)
 
-							return self.c.Prompt(types.PromptOpts{
-								Title:               fmt.Sprintf("%s/%s →", targetRemote, branch.Name),
-								FindSuggestionsFunc: self.helpers.Suggestions.GetRemoteBranchesForRemoteSuggestionsFunc(targetRemote),
-								HandleConfirm: func(targetBranchName string) error {
-									self.c.Log.Debugf("PR will target branch '%s' on remote '%s'", targetBranchName, targetRemote)
-									return self.createPullRequest(branch.Name, targetBranchName)
-								},
-							})
+							return self.promptForTargetBranchNameAndCreatePullRequest(branch.Name, toRemote)
 						},
 					})
 				},
@@ -468,6 +467,17 @@ func (self *BranchesController) createPullRequestMenu(selectedBranch *models.Bra
 	menuItems = append(menuItems, menuItemsForBranch(selectedBranch)...)
 
 	return self.c.Menu(types.CreateMenuOptions{Title: fmt.Sprintf(self.c.Tr.CreatePullRequestOptions), Items: menuItems})
+}
+
+func (self *BranchesController) promptForTargetBranchNameAndCreatePullRequest(fromBranch string, toRemote string) error {
+	return self.c.Prompt(types.PromptOpts{
+		Title:               fmt.Sprintf("%s →", fromBranch),
+		FindSuggestionsFunc: self.helpers.Suggestions.GetRemoteBranchesForRemoteSuggestionsFunc(toRemote),
+		HandleConfirm: func(toBranch string) error {
+			self.c.Log.Debugf("PR will target branch '%s' on remote '%s'", toBranch, toRemote)
+			return self.createPullRequest(fromBranch, toBranch)
+		},
+	})
 }
 
 func (self *BranchesController) createPullRequest(from string, to string) error {
