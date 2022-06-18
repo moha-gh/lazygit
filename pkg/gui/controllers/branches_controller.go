@@ -433,10 +433,19 @@ func (self *BranchesController) createPullRequestMenu(selectedBranch *models.Bra
 				LabelColumns: fromToLabelColumns(branch.Name, self.c.Tr.LcSelectBranch),
 				OnPress: func() error {
 					return self.c.Prompt(types.PromptOpts{
-						Title:               branch.Name + " →",
-						FindSuggestionsFunc: self.helpers.Suggestions.GetRemoteBranchesWithoutRemotePrefixSuggestionsFunc(),
-						HandleConfirm: func(targetBranchName string) error {
-							return self.createPullRequest(branch.Name, targetBranchName)
+						Title:               "Select Target Remote",
+						FindSuggestionsFunc: self.helpers.Suggestions.GetRemoteSuggestionsFunc(),
+						HandleConfirm: func(targetRemote string) error {
+							self.c.Log.Debugf("PR will target remote '%s'", targetRemote)
+
+							return self.c.Prompt(types.PromptOpts{
+								Title:               fmt.Sprintf("%s/%s →", targetRemote, branch.Name),
+								FindSuggestionsFunc: self.helpers.Suggestions.GetRemoteBranchesForRemoteSuggestionsFunc(targetRemote),
+								HandleConfirm: func(targetBranchName string) error {
+									self.c.Log.Debugf("PR will target branch '%s' on remote '%s'", targetBranchName, targetRemote)
+									return self.createPullRequest(branch.Name, targetBranchName)
+								},
+							})
 						},
 					})
 				},
